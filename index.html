@@ -1,0 +1,1457 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Kelimehmet</title>
+  <style>
+    :root {
+      --bg: #10131f;
+      --panel: #181d2e;
+      --panel-2: #222940;
+      --text: #f7f7fb;
+      --muted: #aeb7d3;
+      --accent: #ffe082;
+      --danger: #ff7b7b;
+      --ok: #81e6a3;
+      --p1: #4dabf7;
+      --p2: #ff8fa3;
+      --cell: #f3efe2;
+      --ink: #1b1b1f;
+      --selected: #ffe066;
+      --border: rgba(255,255,255,0.16);
+      --shadow: 0 18px 55px rgba(0,0,0,0.35);
+    }
+
+    * { box-sizing: border-box; }
+
+    html { scroll-behavior: smooth; }
+
+    button, input { font: inherit; }
+
+    button, .cell { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at top left, rgba(77,171,247,0.18), transparent 36rem),
+        radial-gradient(circle at bottom right, rgba(255,143,163,0.15), transparent 32rem),
+        var(--bg);
+    }
+
+    header {
+      padding: 22px 18px 8px;
+      text-align: center;
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      font-size: clamp(1.65rem, 4vw, 3rem);
+      letter-spacing: -0.04em;
+    }
+
+    .subtitle {
+      max-width: 980px;
+      margin: 0 auto;
+      color: var(--muted);
+      line-height: 1.5;
+      font-size: 0.98rem;
+    }
+
+    main {
+      width: min(1220px, calc(100vw - 24px));
+      margin: 18px auto 34px;
+      display: grid;
+      grid-template-columns: minmax(330px, 1fr) minmax(310px, 420px);
+      gap: 18px;
+      align-items: start;
+    }
+
+    .panel {
+      background: rgba(24, 29, 46, 0.92);
+      border: 1px solid var(--border);
+      border-radius: 22px;
+      box-shadow: var(--shadow);
+      padding: 16px;
+      backdrop-filter: blur(12px);
+    }
+
+    .board-panel {
+      display: grid;
+      gap: 14px;
+    }
+
+    .topbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .turn-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 9px 12px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid var(--border);
+      font-weight: 800;
+    }
+
+    .dot {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: var(--p1);
+      display: inline-block;
+    }
+
+    .small-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .board-wrap {
+      width: 100%;
+      display: flex;
+      justify-content: center;
+      overflow: auto;
+      padding: 4px;
+    }
+
+    .board {
+      display: grid;
+      grid-template-columns: repeat(8, minmax(34px, 62px));
+      grid-template-rows: repeat(8, minmax(34px, 62px));
+      gap: 7px;
+      padding: 8px;
+      border-radius: 18px;
+      background: rgba(255,255,255,0.07);
+      border: 1px solid var(--border);
+    }
+
+    .cell {
+      min-width: 34px;
+      min-height: 34px;
+      aspect-ratio: 1 / 1;
+      border: 0;
+      border-radius: 14px;
+      cursor: pointer;
+      background: var(--cell);
+      color: var(--ink);
+      font-size: clamp(1.05rem, 4vw, 1.9rem);
+      font-weight: 900;
+      box-shadow: inset 0 -4px 0 rgba(0,0,0,0.12), 0 8px 12px rgba(0,0,0,0.15);
+      transition: transform 0.08s ease, filter 0.12s ease, outline 0.12s ease;
+    }
+
+    .cell:hover { transform: translateY(-1px); }
+    .cell.selected {
+      background: var(--selected);
+      outline: 4px solid rgba(255,255,255,0.45);
+      transform: translateY(-2px) scale(1.02);
+    }
+    .cell.owned {
+      cursor: not-allowed;
+      color: rgba(255,255,255,0.86);
+      box-shadow: inset 0 -5px 0 rgba(0,0,0,0.20), 0 8px 14px rgba(0,0,0,0.18);
+    }
+    .cell.owned.p1 { background: var(--p1); }
+    .cell.owned.p2 { background: var(--p2); }
+
+    .input-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 8px;
+      align-items: center;
+    }
+
+    input[type="text"] {
+      width: 100%;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 12px 13px;
+      font-size: 1rem;
+      color: var(--text);
+      background: rgba(255,255,255,0.08);
+      outline: none;
+    }
+    input[type="text"]::placeholder { color: rgba(247,247,251,0.45); }
+    input[type="text"]:focus { border-color: rgba(255,224,130,0.7); }
+
+    button {
+      border: 0;
+      border-radius: 14px;
+      padding: 11px 13px;
+      font-weight: 800;
+      cursor: pointer;
+      color: #12131a;
+      background: var(--accent);
+      box-shadow: 0 8px 20px rgba(0,0,0,0.18);
+      transition: transform 0.08s ease, filter 0.12s ease, opacity 0.12s ease;
+    }
+    button:hover { transform: translateY(-1px); filter: brightness(1.03); }
+    button:active { transform: translateY(0); }
+    button.secondary {
+      color: var(--text);
+      background: rgba(255,255,255,0.10);
+      border: 1px solid var(--border);
+    }
+    button.danger { background: var(--danger); color: #191014; }
+    button.ok { background: var(--ok); color: #08130c; }
+    button:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+    .hintline {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      color: var(--muted);
+      font-size: 0.92rem;
+      line-height: 1.45;
+    }
+
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 9px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-size: 0.85rem;
+      font-weight: 700;
+    }
+
+    .status {
+      min-height: 42px;
+      padding: 11px 12px;
+      border-radius: 14px;
+      background: rgba(255,255,255,0.075);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      line-height: 1.45;
+    }
+    .status strong { color: var(--text); }
+    .status.error { border-color: rgba(255,123,123,0.6); color: #ffd0d0; }
+    .status.good { border-color: rgba(129,230,163,0.6); color: #d7ffe2; }
+
+    .side {
+      display: grid;
+      gap: 14px;
+    }
+
+    .score-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .player-card {
+      padding: 13px;
+      border-radius: 18px;
+      background: rgba(255,255,255,0.07);
+      border: 1px solid var(--border);
+    }
+    .player-card.active { outline: 3px solid rgba(255,224,130,0.6); }
+    .player-title {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 9px;
+      font-weight: 900;
+    }
+    .score-num { font-size: 2rem; font-weight: 950; letter-spacing: -0.04em; }
+    .score-breakdown { color: var(--muted); font-size: 0.86rem; line-height: 1.45; }
+
+    .section-title {
+      margin: 0 0 10px;
+      font-size: 1.08rem;
+      letter-spacing: -0.02em;
+    }
+
+    .rules {
+      color: var(--muted);
+      font-size: 0.92rem;
+      line-height: 1.55;
+      padding-left: 18px;
+      margin: 0;
+    }
+    .rules li { margin: 4px 0; }
+
+    .log {
+      max-height: 230px;
+      overflow: auto;
+      display: grid;
+      gap: 8px;
+      padding-right: 4px;
+    }
+    .log-item {
+      padding: 9px 10px;
+      border-radius: 12px;
+      background: rgba(255,255,255,0.07);
+      border: 1px solid rgba(255,255,255,0.09);
+      color: var(--muted);
+      font-size: 0.88rem;
+      line-height: 1.42;
+    }
+    .log-item b { color: var(--text); }
+
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.64);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      z-index: 50;
+    }
+    .modal-backdrop.show { display: flex; }
+    .modal {
+      width: min(620px, 100%);
+      background: #171b2b;
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      box-shadow: var(--shadow);
+      padding: 18px;
+    }
+    .modal h2 { margin: 0 0 10px; letter-spacing: -0.03em; }
+    .modal p { color: var(--muted); line-height: 1.5; }
+    .modal-actions {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: 9px;
+      margin-top: 14px;
+    }
+
+    .card-display {
+      padding: 14px;
+      border-radius: 18px;
+      background: linear-gradient(135deg, rgba(255,224,130,0.15), rgba(255,255,255,0.07));
+      border: 1px solid rgba(255,224,130,0.35);
+      margin-top: 10px;
+    }
+    .card-display .card-no { color: var(--accent); font-weight: 900; margin-bottom: 6px; }
+    .card-display .card-text { font-size: 1.05rem; line-height: 1.45; }
+
+    .options-box {
+      display: grid;
+      gap: 8px;
+      margin: 8px 0 2px;
+    }
+    label.checkline {
+      display: flex;
+      gap: 8px;
+      align-items: flex-start;
+      color: var(--muted);
+      font-size: 0.9rem;
+      line-height: 1.4;
+    }
+
+    .guide-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 12px;
+    }
+    .guide-step {
+      padding: 12px;
+      border-radius: 16px;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid var(--border);
+    }
+    .guide-step strong {
+      display: block;
+      margin-bottom: 5px;
+      color: var(--accent);
+    }
+    .guide-step p {
+      margin: 0;
+      font-size: 0.92rem;
+    }
+    .guide-tip {
+      margin-top: 12px;
+      padding: 12px;
+      border-radius: 16px;
+      background: rgba(129,230,163,0.10);
+      border: 1px solid rgba(129,230,163,0.25);
+    }
+
+    footer {
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.82rem;
+      padding: 0 16px 20px;
+    }
+
+
+    .mobile-only-note {
+      display: none;
+      color: var(--muted);
+      font-size: 0.88rem;
+      line-height: 1.4;
+    }
+
+    .mobile-toggle-on {
+      background: var(--ok) !important;
+      color: #08130c !important;
+    }
+
+    body.mobile-ui header {
+      padding: 14px 10px 4px;
+    }
+
+    body.mobile-ui .subtitle {
+      font-size: 0.86rem;
+      line-height: 1.35;
+      max-width: 96vw;
+    }
+
+    body.mobile-ui main {
+      width: 100%;
+      margin: 10px auto 22px;
+      padding: 0 8px;
+      grid-template-columns: 1fr;
+      gap: 10px;
+    }
+
+    body.mobile-ui .panel {
+      border-radius: 16px;
+      padding: 10px;
+    }
+
+    body.mobile-ui .board-panel {
+      gap: 10px;
+    }
+
+    body.mobile-ui .topbar {
+      gap: 8px;
+    }
+
+    body.mobile-ui .turn-badge {
+      width: 100%;
+      justify-content: center;
+      padding: 10px 12px;
+      font-size: 0.96rem;
+    }
+
+    body.mobile-ui .small-actions {
+      width: 100%;
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    body.mobile-ui .small-actions button,
+    body.mobile-ui #submitBtn {
+      width: 100%;
+      min-height: 44px;
+      padding: 10px 8px;
+      border-radius: 12px;
+      font-size: 0.9rem;
+    }
+
+    body.mobile-ui .board-wrap {
+      overflow: visible;
+      padding: 0;
+      justify-content: center;
+    }
+
+    body.mobile-ui .board {
+      width: min(100%, calc(100vw - 20px));
+      grid-template-columns: repeat(8, minmax(0, 1fr));
+      grid-template-rows: repeat(8, minmax(0, 1fr));
+      gap: 4px;
+      padding: 5px;
+      border-radius: 14px;
+    }
+
+    body.mobile-ui .cell {
+      min-width: 0;
+      min-height: 0;
+      width: 100%;
+      aspect-ratio: 1 / 1;
+      border-radius: 10px;
+      font-size: clamp(0.9rem, 6.4vw, 1.45rem);
+      box-shadow: inset 0 -3px 0 rgba(0,0,0,0.12), 0 4px 8px rgba(0,0,0,0.14);
+    }
+
+    body.mobile-ui .cell:hover {
+      transform: none;
+    }
+
+    body.mobile-ui .cell.selected {
+      outline: 3px solid rgba(255,255,255,0.5);
+      transform: scale(1.02);
+    }
+
+    body.mobile-ui .input-row {
+      grid-template-columns: 1fr;
+      gap: 7px;
+    }
+
+    body.mobile-ui input[type="text"] {
+      min-height: 46px;
+      font-size: 16px;
+      border-radius: 12px;
+    }
+
+    body.mobile-ui .hintline {
+      gap: 6px;
+      font-size: 0.82rem;
+    }
+
+    body.mobile-ui .chip {
+      padding: 6px 8px;
+      font-size: 0.78rem;
+    }
+
+    body.mobile-ui .status {
+      min-height: 0;
+      padding: 10px;
+      font-size: 0.88rem;
+      border-radius: 12px;
+    }
+
+    body.mobile-ui .side {
+      gap: 10px;
+    }
+
+    body.mobile-ui .score-grid {
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    body.mobile-ui .player-card {
+      padding: 10px;
+      border-radius: 14px;
+    }
+
+    body.mobile-ui .player-title {
+      font-size: 0.84rem;
+      margin-bottom: 6px;
+    }
+
+    body.mobile-ui .score-num {
+      font-size: 1.45rem;
+    }
+
+    body.mobile-ui .score-breakdown {
+      font-size: 0.74rem;
+    }
+
+    body.mobile-ui .rules {
+      font-size: 0.84rem;
+      line-height: 1.45;
+      padding-left: 16px;
+    }
+
+    body.mobile-ui .log {
+      max-height: 160px;
+    }
+
+    body.mobile-ui .modal-backdrop {
+      align-items: flex-end;
+      padding: 8px;
+    }
+
+    body.mobile-ui .modal {
+      width: 100%;
+      max-height: 92dvh;
+      overflow: auto;
+      border-radius: 20px 20px 14px 14px;
+      padding: 14px;
+    }
+
+    body.mobile-ui .modal h2 {
+      font-size: 1.25rem;
+    }
+
+    body.mobile-ui .modal p,
+    body.mobile-ui .guide-step p {
+      font-size: 0.88rem;
+    }
+
+    body.mobile-ui .modal-actions {
+      display: grid;
+      grid-template-columns: 1fr;
+    }
+
+    body.mobile-ui .modal-actions button {
+      width: 100%;
+      min-height: 44px;
+    }
+
+    body.mobile-ui .guide-grid {
+      grid-template-columns: 1fr;
+    }
+
+    body.mobile-ui .mobile-only-note {
+      display: block;
+    }
+
+    @media (max-width: 860px) {
+      main { grid-template-columns: 1fr; }
+      .board { gap: 5px; }
+      .input-row { grid-template-columns: 1fr; }
+      .score-grid { grid-template-columns: 1fr; }
+      .guide-grid { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 560px) {
+      body:not(.desktop-ui) main {
+        width: 100%;
+        padding: 0 8px;
+        margin-top: 10px;
+      }
+      body:not(.desktop-ui) .board {
+        width: min(100%, calc(100vw - 20px));
+        grid-template-columns: repeat(8, minmax(0, 1fr));
+        grid-template-rows: repeat(8, minmax(0, 1fr));
+        gap: 4px;
+        padding: 5px;
+      }
+      body:not(.desktop-ui) .cell {
+        min-width: 0;
+        min-height: 0;
+        width: 100%;
+        font-size: clamp(0.9rem, 6.2vw, 1.45rem);
+        border-radius: 10px;
+      }
+      body:not(.desktop-ui) .small-actions {
+        width: 100%;
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+      body:not(.desktop-ui) .small-actions button {
+        width: 100%;
+        min-height: 44px;
+        font-size: 0.9rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Kelimehmet</h1>
+    <p class="subtitle">8x8 harf tahtasında komşu kareleri seç, kelime üret, rakibinden bağlantı onayı al, kart sorularıyla ekstra puan kazan. Oyun sonunda kesişmeyen 5'li çapraz, 6'lı yatay ve 6'lı dikey renk dizilimleri için bonus puan al.</p>
+  </header>
+
+  <main>
+    <section class="panel board-panel">
+      <div class="topbar">
+        <div class="turn-badge"><span id="turnDot" class="dot"></span><span id="turnText">Oyuncu 1 sırası</span></div>
+        <div class="small-actions">
+          <button id="mobileModeBtn" class="secondary">Mobil görünüm</button>
+          <button id="clearBtn" class="secondary">Seçimi temizle</button>
+          <button id="endGameBtn" class="danger">Oyunu bitir</button>
+          <button id="guideBtn" class="secondary">Oyun kılavuzu</button>
+          <button id="newGameBtn" class="secondary">Yeni oyun</button>
+        </div>
+      </div>
+
+      <div class="board-wrap">
+        <div id="board" class="board" aria-label="Kelime tahtası"></div>
+      </div>
+      <div class="mobile-only-note">Mobil görünüm açıkken tahta ekrana sığacak şekilde küçülür, butonlar büyür ve açılır pencereler alttan çıkar.</div>
+
+      <div class="input-row">
+        <input id="wordInput" type="text" placeholder="Seçtiğin harflerle kelime yaz..." autocomplete="off" />
+        <button id="submitBtn">Kelimeyi oyna</button>
+      </div>
+
+      <div id="conditionalOptions" class="options-box"></div>
+
+      <div class="hintline">
+        <span class="chip" id="selectedChip">Seçili: 0</span>
+        <span class="chip" id="lastWordChip">Önceki kelime: yok</span>
+        <span class="chip">Tahta: 24 sesli + 40 sessiz</span>
+      </div>
+
+      <div id="status" class="status">Başlamak için tahtadan en az 5 komşu harf seç. Yazdığın kelime bu harfleri içersin; fazladan harf olabilir.</div>
+    </section>
+
+    <aside class="side">
+      <section class="panel">
+        <h2 class="section-title">Puan Durumu</h2>
+        <div class="score-grid">
+          <div id="p1Card" class="player-card active">
+            <div class="player-title"><span><span class="dot" style="background:var(--p1)"></span> Oyuncu 1</span></div>
+            <div id="p1Score" class="score-num">0</div>
+            <div id="p1Break" class="score-breakdown">Kare: 0 · Kart: 0</div>
+            <div id="p1Active" class="score-breakdown">Aktif kart: yok</div>
+          </div>
+          <div id="p2Card" class="player-card">
+            <div class="player-title"><span><span class="dot" style="background:var(--p2)"></span> Oyuncu 2</span></div>
+            <div id="p2Score" class="score-num">0</div>
+            <div id="p2Break" class="score-breakdown">Kare: 0 · Kart: 0</div>
+            <div id="p2Active" class="score-breakdown">Aktif kart: yok</div>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2 class="section-title">Kısa Kurallar</h2>
+        <ol class="rules">
+          <li>İlk hamlede en az 5 harfli kelime gerekir.</li>
+          <li>Seçilen kareler yatay/dikey komşulukla bağlı olmalıdır.</li>
+          <li>Harf sırası normalde önemsizdir; seçtiğin harflerin yazdığın kelimenin içinde bulunması yeterlidir.</li>
+          <li>Önceki kelimeyle anlamsal bağlantıyı rakip onaylar. Kel alaka jokeri bunu bypass eder.</li>
+          <li>Oynanan harfler tahtadan çıkar, oyuncunun renkli karesine dönüşür.</li>
+          <li>Toplam puan = renkli kare sayısı + kart puanları + oyun sonu dizilim bonusları.</li>
+          <li>Oyun sonunda kesişmeyen her 5'li çapraz, 6'lı yatay ve 6'lı dikey renk dizilimi için +3 puan verilir.</li>
+        </ol>
+      </section>
+
+      <section class="panel">
+        <h2 class="section-title">Oyun Günlüğü</h2>
+        <div id="log" class="log"></div>
+      </section>
+    </aside>
+  </main>
+
+  <div id="modalBackdrop" class="modal-backdrop">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+      <h2 id="modalTitle">Başlık</h2>
+      <div id="modalBody"></div>
+      <div id="modalActions" class="modal-actions"></div>
+    </div>
+  </div>
+
+  <script>
+    const TURKISH_LETTERS = "ABCÇDEFGĞHIİJKLMNOÖPRSŞTUÜVYZ".split("");
+    const VOWELS = "AEIİOÖUÜ".split("");
+    const CONSONANTS = "BCÇDFGĞHJKLMNPRSŞTVYZ".split("");
+
+    const CARDS = [
+      {no:1, type:"question_pm", text:"Kelimeyi tanıt. (-1 / +1 puan)"},
+      {no:2, type:"joker_unrelated", text:"JOKER: Kel alaka jokeri, alakasız bir kelime söyleyebilirsin."},
+      {no:3, type:"question_plus", text:"Kelimenin zıt anlamlısı nedir? (+1 puan)"},
+      {no:4, type:"question_pm", text:"Kelimen Türkiye’den bir şehir olsa hangisi olurdu, neden? (-1 / +1 puan)"},
+      {no:5, type:"question_pm", text:"Kelimenin İngilizcesi; eğer İngilizceyse Türkçesi nedir? (-1 / +1 puan)"},
+      {no:6, type:"question_pm", text:"Kelimen bir hayvan olsa hangisi olurdu, neden? (-1 / +1 puan)"},
+      {no:7, type:"penalty_proper_only", text:"CEZA: Sadece özel isim bulabilirsin."},
+      {no:8, type:"question_pm", text:"Kelimeyi bir cümle içinde kullan. (-1 / +1 puan)"},
+      {no:9, type:"question_pm", text:"Kelimen bir ünlü olsaydı kim olurdu, neden? (-1 / +1 puan)"},
+      {no:10, type:"question_plus", text:"Kelimenin ilk hecesiyle yeni bir kelime türet. (+1 puan)"},
+      {no:11, type:"question_pm", text:"Kelimeyi tanıt. (-1 / +1 puan)"},
+      {no:12, type:"question_pm", text:"Kelimen bir renk olsaydı hangi renk olurdu, neden? (-1 / +1 puan)"},
+      {no:13, type:"question_pm", text:"Kelimenle hiçbir alakası olmayan kelime türet. (-1 / +1 puan)"},
+      {no:14, type:"question_plus", text:"Kelimenin eş anlamlısı nedir? (+1 puan)"},
+      {no:15, type:"question_pm", text:"Kelimen bir yemek olsaydı ne olurdu, neden? (-1 / +1 puan)"},
+      {no:16, type:"joker_vowels", text:"JOKER: a-e / o-ö / u-ü / ı-i harflerini birbirleri yerine kullanabilirsin."},
+      {no:17, type:"question_pm", text:"Kelimeyi tanıt. (-1 / +1 puan)"},
+      {no:18, type:"question_pm", text:"Kelimenin kökeni hangi dildir? (-1 / +1 puan)"},
+      {no:19, type:"question_pm", text:"Kelimeye anlamsal açıdan en yakın kelime nedir, neden? (-1 / +1 puan)"},
+      {no:20, type:"joker_unrelated", text:"JOKER: Kel alaka jokeri, alakasız bir kelime söyleyebilirsin."},
+      {no:21, type:"question_plus", text:"Kelimenin son hecesiyle yeni bir kelime türet. (+1 puan)"},
+      {no:22, type:"question_pm", text:"Kelimeyi tanıt. (-1 / +1 puan)"},
+      {no:23, type:"question_pm", text:"Bu kelime en çok hangi okul dersinde karşımıza çıkabilir? (-1 / +1 puan)"},
+      {no:24, type:"question_pm", text:"Kelimen bir ülke olsa hangisi olurdu, neden? (-1 / +1 puan)"},
+      {no:25, type:"question_pm", text:"Kelimeni söyleme potansiyeli yüksek bir ünlü söyle. (-1 / +1 puan)"},
+      {no:26, type:"penalty_no_proper", text:"CEZA: Özel isim bulmak yasak."},
+      {no:27, type:"question_pm", text:"Kelimeyi tanıt. (-1 / +1 puan)"},
+      {no:28, type:"question_pm", text:"İsminin okunuşu kelimenin okunuşuna benzeyen ünlü veya ortak tanıdık söyle. (-1 / +1 puan)"},
+      {no:29, type:"question_pm", text:"Kelimen bir hayvan olsa hangisi olurdu, neden? (-1 / +1 puan)"},
+      {no:30, type:"joker_consonants", text:"JOKER: f-p / s-ş / t-d / k-g / ç-c / h-ğ harflerini birbirleri yerine kullanabilirsin."},
+      {no:31, type:"question_pm", text:"Kelimenin İngilizcesi; eğer İngilizceyse Türkçesi nedir? (-1 / +1 puan)"},
+      {no:32, type:"question_pm", text:"Kelimeyi ortak tanıdıklardan söylemesi en mümkün kişi kimdir, neden? (-1 / +1 puan)"},
+      {no:33, type:"question_plus", text:"Kelimenin zıt anlamlısı nedir? (+1 puan)"},
+      {no:34, type:"question_pm", text:"Kelimeyi tanıt. (-1 / +1 puan)"},
+      {no:35, type:"joker_unrelated", text:"JOKER: Kel alaka jokeri, alakasız bir kelime söyleyebilirsin."},
+      {no:36, type:"question_pm", text:"Kelimen bir ünlü olsaydı kim olurdu, neden? (-1 / +1 puan)"},
+      {no:37, type:"question_plus", text:"Kelimenin ilk hecesiyle yeni bir kelime türet. (+1 puan)"},
+      {no:38, type:"penalty_ordered", text:"CEZA: Bulacağın kelimenin harfleri kelime içinde sıralı olmalı."},
+      {no:39, type:"question_pm", text:"Kelimen bir yemek olsaydı ne olurdu, neden? (-1 / +1 puan)"},
+      {no:40, type:"question_pm", text:"Kelimeyi bir cümle içinde kullan. (-1 / +1 puan)"},
+      {no:41, type:"question_pm", text:"Kelimen bir renk olsaydı hangi renk olurdu, neden? (-1 / +1 puan)"},
+      {no:42, type:"question_pm", text:"Kelimeyi tanıt. (-1 / +1 puan)"},
+      {no:43, type:"question_pm", text:"Kelimenin İngilizcesi; eğer İngilizceyse Türkçesi nedir? (-1 / +1 puan)"},
+      {no:44, type:"question_pm", text:"Kelimeye anlamsal açıdan en yakın kelime nedir, neden? (-1 / +1 puan)"},
+      {no:45, type:"question_pm", text:"Kelimenin kökeni hangi dildir? (-1 / +1 puan)"},
+      {no:46, type:"joker_unrelated", text:"JOKER: Kel alaka jokeri, alakasız bir kelime söyleyebilirsin."},
+      {no:47, type:"penalty_proper_only", text:"CEZA: Sadece özel isim bulabilirsin."},
+      {no:48, type:"question_pm", text:"Kelimen Türkiye’den bir şehir olsa hangisi olurdu, neden? (-1 / +1 puan)"},
+      {no:49, type:"question_plus", text:"Kelimenin son hecesiyle yeni bir kelime türet. (+1 puan)"},
+      {no:50, type:"question_pm", text:"Bu kelime en çok hangi okul dersinde karşımıza çıkabilir? (-1 / +1 puan)"},
+      {no:51, type:"question_plus", text:"Kelimenin eş anlamlısı nedir? (+1 puan)"},
+      {no:52, type:"question_pm", text:"Kelimeni söyleme potansiyeli yüksek bir ünlü söyle. (-1 / +1 puan)"},
+      {no:53, type:"joker_vowels", text:"JOKER: a-e / o-ö / u-ü / ı-i harflerini birbirleri yerine kullanabilirsin."},
+      {no:54, type:"question_pm", text:"Kelimeyi tanıt. (-1 / +1 puan)"},
+      {no:55, type:"question_pm", text:"Kelimen bir ülke olsa hangisi olurdu, neden? (-1 / +1 puan)"},
+      {no:56, type:"question_pm", text:"Kelimeyi ortak tanıdıklardan söylemesi en mümkün kişi kimdir, neden? (-1 / +1 puan)"},
+      {no:57, type:"penalty_no_proper", text:"CEZA: Özel isim bulmak yasak."},
+      {no:58, type:"question_pm", text:"İsminin okunuşu kelimenin okunuşuna benzeyen ünlü veya ortak tanıdık söyle. (-1 / +1 puan)"},
+      {no:59, type:"question_pm", text:"Kelimenle hiçbir alakası olmayan kelime türet. (-1 / +1 puan)"},
+      {no:60, type:"question_pm", text:"Kelimenin İngilizcesi; eğer İngilizceyse Türkçesi nedir? (-1 / +1 puan)"},
+      {no:61, type:"joker_consonants", text:"JOKER: f-p / s-ş / t-d / k-g / ç-c / h-ğ harflerini birbirleri yerine kullanabilirsin."},
+      {no:62, type:"joker_unrelated", text:"JOKER: Kel alaka jokeri, alakasız bir kelime söyleyebilirsin."},
+      {no:63, type:"penalty_ordered", text:"CEZA: Bulacağın kelimenin harfleri kelime içinde sıralı olmalı."},
+      {no:64, type:"joker_unrelated", text:"JOKER: Kel alaka jokeri, alakasız bir kelime söyleyebilirsin."}
+    ];
+
+    let state;
+
+    const el = (id) => document.getElementById(id);
+    const boardEl = el("board");
+    const statusEl = el("status");
+    const modalBackdrop = el("modalBackdrop");
+    const modalTitle = el("modalTitle");
+    const modalBody = el("modalBody");
+    const modalActions = el("modalActions");
+
+    function turkishUpper(s) {
+      return (s || "").toLocaleUpperCase("tr-TR");
+    }
+
+    function cleanWord(s) {
+      const up = turkishUpper(s).normalize("NFC");
+      return up.split("").filter(ch => TURKISH_LETTERS.includes(ch)).join("");
+    }
+
+    function shuffle(arr) {
+      const copy = arr.slice();
+      for (let i = copy.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [copy[i], copy[j]] = [copy[j], copy[i]];
+      }
+      return copy;
+    }
+
+    function generateLetters() {
+      let letters = [];
+      VOWELS.forEach(v => { letters.push(v, v, v); }); // 24
+      CONSONANTS.forEach(c => { letters.push(c, c); }); // 42, toplam 66
+      const consonantIndexes = letters.map((l, idx) => CONSONANTS.includes(l) ? idx : -1).filter(idx => idx >= 0);
+      const toRemove = shuffle(consonantIndexes).slice(0, 2).sort((a,b) => b - a);
+      toRemove.forEach(idx => letters.splice(idx, 1));
+      return shuffle(letters);
+    }
+
+    function newGame() {
+      const letters = generateLetters();
+      state = {
+        board: letters.map((letter, idx) => ({ idx, letter, owner: null })),
+        selected: [],
+        players: [
+          { name: "Oyuncu 1", boardPoints: 0, cardPoints: 0, activeCard: null },
+          { name: "Oyuncu 2", boardPoints: 0, cardPoints: 0, activeCard: null }
+        ],
+        current: 0,
+        previousWord: null,
+        turnNo: 1,
+        pending: null,
+        cardDeck: shuffle(CARDS),
+        log: []
+      };
+      el("wordInput").value = "";
+      setStatus("Başlamak için tahtadan en az 5 komşu harf seç. Yazdığın kelime bu harfleri içersin; fazladan harf olabilir.");
+      renderAll();
+    }
+
+    function drawCard() {
+      if (state.cardDeck.length === 0) state.cardDeck = shuffle(CARDS);
+      return state.cardDeck.pop();
+    }
+
+    function renderAll() {
+      renderBoard();
+      renderScore();
+      renderTurn();
+      renderOptions();
+      renderLog();
+    }
+
+    function renderBoard() {
+      boardEl.innerHTML = "";
+      state.board.forEach(cell => {
+        const btn = document.createElement("button");
+        btn.className = "cell";
+        btn.textContent = cell.owner === null ? cell.letter : "";
+        btn.setAttribute("aria-label", cell.owner === null ? `Harf ${cell.letter}` : `${state.players[cell.owner].name} karesi`);
+        if (state.selected.includes(cell.idx)) btn.classList.add("selected");
+        if (cell.owner !== null) {
+          btn.classList.add("owned", cell.owner === 0 ? "p1" : "p2");
+        }
+        btn.addEventListener("click", () => toggleCell(cell.idx));
+        boardEl.appendChild(btn);
+      });
+      el("selectedChip").textContent = `Seçili: ${state.selected.length}`;
+      el("lastWordChip").textContent = `Önceki kelime: ${state.previousWord || "yok"}`;
+    }
+
+    function renderTurn() {
+      const player = state.players[state.current];
+      el("turnText").textContent = `${player.name} sırası`;
+      el("turnDot").style.background = state.current === 0 ? "var(--p1)" : "var(--p2)";
+      el("p1Card").classList.toggle("active", state.current === 0);
+      el("p2Card").classList.toggle("active", state.current === 1);
+    }
+
+    function renderScore() {
+      state.players.forEach((p, i) => {
+        const total = p.boardPoints + p.cardPoints;
+        el(`p${i+1}Score`).textContent = total;
+        el(`p${i+1}Break`).textContent = `Kare: ${p.boardPoints} · Kart: ${p.cardPoints}`;
+        el(`p${i+1}Active`).textContent = `Aktif kart: ${p.activeCard ? `#${p.activeCard.no} ${shortCardName(p.activeCard)}` : "yok"}`;
+      });
+    }
+
+    function shortCardName(card) {
+      if (!card) return "yok";
+      const names = {
+        joker_unrelated: "Kel alaka jokeri",
+        joker_vowels: "Sesli dönüşüm jokeri",
+        joker_consonants: "Sessiz dönüşüm jokeri",
+        penalty_proper_only: "Sadece özel isim",
+        penalty_no_proper: "Özel isim yasak",
+        penalty_ordered: "Sıralı harf cezası"
+      };
+      return names[card.type] || "Soru";
+    }
+
+    function renderOptions() {
+      const box = el("conditionalOptions");
+      const active = state.players[state.current].activeCard;
+      box.innerHTML = "";
+      if (!active) return;
+      const info = document.createElement("div");
+      info.className = "status";
+      info.innerHTML = `<strong>Bu tur aktif kart:</strong> #${active.no} ${active.text}`;
+      box.appendChild(info);
+
+      if (active.type === "penalty_proper_only") {
+        box.appendChild(checkboxLine("properOnlyCheck", "Bu kelimenin özel isim olduğunu onaylıyorum."));
+      }
+      if (active.type === "penalty_no_proper") {
+        box.appendChild(checkboxLine("noProperCheck", "Bu kelimenin özel isim olmadığını onaylıyorum."));
+      }
+      if (active.type === "penalty_ordered") {
+        const line = document.createElement("div");
+        line.className = "hintline";
+        line.textContent = "Sıralı harf cezasında kareleri kelime sırasıyla tıkla.";
+        box.appendChild(line);
+      }
+    }
+
+    function checkboxLine(id, text) {
+      const label = document.createElement("label");
+      label.className = "checkline";
+      label.innerHTML = `<input type="checkbox" id="${id}"> <span>${text}</span>`;
+      return label;
+    }
+
+    function renderLog() {
+      const logEl = el("log");
+      logEl.innerHTML = "";
+      if (!state.log.length) {
+        const empty = document.createElement("div");
+        empty.className = "log-item";
+        empty.textContent = "Henüz hamle yok.";
+        logEl.appendChild(empty);
+        return;
+      }
+      state.log.slice().reverse().forEach(item => {
+        const div = document.createElement("div");
+        div.className = "log-item";
+        div.innerHTML = item;
+        logEl.appendChild(div);
+      });
+    }
+
+    function toggleCell(idx) {
+      const cell = state.board[idx];
+      if (cell.owner !== null) return;
+      const existing = state.selected.indexOf(idx);
+      if (existing >= 0) state.selected.splice(existing, 1);
+      else state.selected.push(idx);
+      renderBoard();
+    }
+
+    function setStatus(html, kind = "") {
+      statusEl.innerHTML = html;
+      statusEl.className = `status ${kind}`.trim();
+    }
+
+    function selectedLetters() {
+      return state.selected.map(idx => state.board[idx].letter);
+    }
+
+    function rc(idx) { return { r: Math.floor(idx / 8), c: idx % 8 }; }
+
+    function maskFromCells(cells) {
+      return cells.reduce((mask, idx) => mask | (1n << BigInt(idx)), 0n);
+    }
+
+    function popCountBigInt(mask) {
+      let count = 0;
+      while (mask > 0n) {
+        count += Number(mask & 1n);
+        mask >>= 1n;
+      }
+      return count;
+    }
+
+    function formationCandidatesFor(playerIndex) {
+      const candidates = [];
+      const ownedByPlayer = (idx) => state.board[idx].owner === playerIndex;
+      const addIfOwned = (type, cells) => {
+        if (cells.every(ownedByPlayer)) candidates.push({ type, cells, mask: maskFromCells(cells) });
+      };
+
+      for (let r = 0; r < 8; r++) {
+        for (let c = 0; c <= 2; c++) {
+          addIfOwned("horizontal", Array.from({ length: 6 }, (_, k) => r * 8 + c + k));
+        }
+      }
+
+      for (let r = 0; r <= 2; r++) {
+        for (let c = 0; c < 8; c++) {
+          addIfOwned("vertical", Array.from({ length: 6 }, (_, k) => (r + k) * 8 + c));
+        }
+      }
+
+      for (let r = 0; r <= 3; r++) {
+        for (let c = 0; c <= 3; c++) {
+          addIfOwned("diagonal", Array.from({ length: 5 }, (_, k) => (r + k) * 8 + (c + k)));
+        }
+      }
+
+      for (let r = 0; r <= 3; r++) {
+        for (let c = 4; c < 8; c++) {
+          addIfOwned("diagonal", Array.from({ length: 5 }, (_, k) => (r + k) * 8 + (c - k)));
+        }
+      }
+
+      return candidates;
+    }
+
+    function bestNonOverlappingFormations(candidates) {
+      let best = {
+        total: 0,
+        horizontal: 0,
+        vertical: 0,
+        diagonal: 0,
+        chosen: []
+      };
+
+      function betterThanBest(total, counts) {
+        if (total !== best.total) return total > best.total;
+        const weighted = counts.diagonal * 3 + counts.horizontal * 2 + counts.vertical;
+        const bestWeighted = best.diagonal * 3 + best.horizontal * 2 + best.vertical;
+        return weighted > bestWeighted;
+      }
+
+      function search(available, counts, chosen) {
+        const total = counts.horizontal + counts.vertical + counts.diagonal;
+        if (available.length === 0) {
+          if (betterThanBest(total, counts)) best = { ...counts, total, chosen: chosen.slice() };
+          return;
+        }
+
+        let unionMask = 0n;
+        available.forEach(i => { unionMask |= candidates[i].mask; });
+        const upperBound = total + Math.min(available.length, Math.floor(popCountBigInt(unionMask) / 5));
+        if (upperBound < best.total) return;
+
+        const cellOptions = new Map();
+        available.forEach(i => {
+          candidates[i].cells.forEach(cell => {
+            if (!cellOptions.has(cell)) cellOptions.set(cell, []);
+            cellOptions.get(cell).push(i);
+          });
+        });
+
+        let pivotCell = null;
+        let pivotOptions = null;
+        for (const [cell, options] of cellOptions.entries()) {
+          if (!pivotOptions || options.length < pivotOptions.length) {
+            pivotCell = cell;
+            pivotOptions = options;
+          }
+        }
+        if (pivotCell === null) return;
+
+        const optionSet = new Set(pivotOptions);
+        const sortedOptions = pivotOptions.slice().sort((a, b) => {
+          const conflictsA = available.filter(i => (candidates[a].mask & candidates[i].mask) !== 0n).length;
+          const conflictsB = available.filter(i => (candidates[b].mask & candidates[i].mask) !== 0n).length;
+          return conflictsB - conflictsA;
+        });
+
+        sortedOptions.forEach(i => {
+          const candidate = candidates[i];
+          const nextAvailable = available.filter(j => j !== i && (candidate.mask & candidates[j].mask) === 0n);
+          const nextCounts = { ...counts };
+          nextCounts[candidate.type] += 1;
+          search(nextAvailable, nextCounts, chosen.concat(candidate));
+        });
+
+        const withoutPivotCell = available.filter(i => !optionSet.has(i));
+        search(withoutPivotCell, counts, chosen);
+      }
+
+      search(
+        candidates.map((_, i) => i),
+        { horizontal: 0, vertical: 0, diagonal: 0 },
+        []
+      );
+      return best;
+    }
+
+    function calculateFormationBonus(playerIndex) {
+      const candidates = formationCandidatesFor(playerIndex);
+      const best = bestNonOverlappingFormations(candidates);
+      return {
+        ...best,
+        points: best.total * 3
+      };
+    }
+
+    function bonusText(bonus) {
+      return `Bonus: ${bonus.points} = ${bonus.total} dizilim × 3 ` +
+        `(5'li çapraz: ${bonus.diagonal}, 6'lı yatay: ${bonus.horizontal}, 6'lı dikey: ${bonus.vertical})`;
+    }
+
+    function areOrthogonalNeighbors(a, b) {
+      const A = rc(a), B = rc(b);
+      return Math.abs(A.r - B.r) + Math.abs(A.c - B.c) === 1;
+    }
+
+    function isConnected(indices) {
+      if (indices.length <= 1) return true;
+      const set = new Set(indices);
+      const stack = [indices[0]];
+      const seen = new Set([indices[0]]);
+      while (stack.length) {
+        const x = stack.pop();
+        const {r,c} = rc(x);
+        const ns = [
+          (r > 0 ? x - 8 : null),
+          (r < 7 ? x + 8 : null),
+          (c > 0 ? x - 1 : null),
+          (c < 7 ? x + 1 : null)
+        ].filter(v => v !== null);
+        ns.forEach(n => {
+          if (set.has(n) && !seen.has(n)) { seen.add(n); stack.push(n); }
+        });
+      }
+      return seen.size === indices.length;
+    }
+
+    function charCompatible(wordCh, boardCh, activeCard) {
+      if (wordCh === boardCh) return true;
+      if (!activeCard) return false;
+      if (activeCard.type === "joker_vowels") {
+        const groups = ["AE", "OÖ", "UÜ", "Iİ"];
+        return groups.some(g => g.includes(wordCh) && g.includes(boardCh));
+      }
+      if (activeCard.type === "joker_consonants") {
+        const groups = ["FP", "SŞ", "TD", "KG", "ÇC", "HĞ"];
+        return groups.some(g => g.includes(wordCh) && g.includes(boardCh));
+      }
+      return false;
+    }
+
+    function multisetCompatible(word, letters, activeCard) {
+      const wordLetters = word.split("");
+      if (letters.length > wordLetters.length) return false;
+      const matchToWord = Array(wordLetters.length).fill(-1);
+
+      function tryBoardLetter(bi, seen) {
+        for (let wi = 0; wi < wordLetters.length; wi++) {
+          if (seen[wi]) continue;
+          if (!charCompatible(wordLetters[wi], letters[bi], activeCard)) continue;
+          seen[wi] = true;
+          if (matchToWord[wi] === -1 || tryBoardLetter(matchToWord[wi], seen)) {
+            matchToWord[wi] = bi;
+            return true;
+          }
+        }
+        return false;
+      }
+
+      for (let bi = 0; bi < letters.length; bi++) {
+        const seen = Array(wordLetters.length).fill(false);
+        if (!tryBoardLetter(bi, seen)) return false;
+      }
+      return true;
+    }
+
+    function orderedCompatible(word, letters, activeCard) {
+      const wordLetters = word.split("");
+      let wi = 0;
+      for (const boardLetter of letters) {
+        let found = false;
+        while (wi < wordLetters.length) {
+          if (charCompatible(wordLetters[wi], boardLetter, activeCard)) {
+            found = true;
+            wi += 1;
+            break;
+          }
+          wi += 1;
+        }
+        if (!found) return false;
+      }
+      return true;
+    }
+
+    function submitWord() {
+      const raw = el("wordInput").value;
+      const word = cleanWord(raw);
+      const player = state.players[state.current];
+      const active = player.activeCard;
+      const selected = state.selected.slice();
+      const letters = selectedLetters();
+
+      if (!word) return setStatus("Kelime alanına sadece Türkçe harflerden oluşan bir kelime yaz.", "error");
+      if (selected.length === 0) return setStatus("Önce tahtadan harf seçmelisin.", "error");
+      if (state.turnNo === 1 && selected.length < 5) return setStatus("İlk hamlede tahtadan en az 5 komşu harf seçmelisin.", "error");
+      if (!isConnected(selected)) return setStatus("Seçilen kareler yatay/dikey komşulukla tek bir bağlı grup oluşturmalı. Çapraz bağlantı sayılmaz.", "error");
+      if (active?.type === "penalty_proper_only" && !el("properOnlyCheck")?.checked) return setStatus("Aktif ceza nedeniyle bu kelimenin özel isim olduğunu onaylamalısın.", "error");
+      if (active?.type === "penalty_no_proper" && !el("noProperCheck")?.checked) return setStatus("Aktif ceza nedeniyle bu kelimenin özel isim olmadığını onaylamalısın.", "error");
+      if (active?.type === "penalty_ordered") {
+        if (!orderedCompatible(word, letters, active)) return setStatus(`Sıralı harf cezası aktif: tıklama sıran (${letters.join("-")}) yazdığın kelimeyle aynı sırada olmalı.`, "error");
+      } else {
+        if (!multisetCompatible(word, letters, active)) return setStatus(`Seçilen harfler (${letters.join("-")}) yazdığın kelimenin harfleriyle uyuşmuyor.`, "error");
+      }
+
+      const bypassRelation = active?.type === "joker_unrelated";
+      state.pending = { word, selected, letters, activeUsed: active };
+
+      if (state.previousWord && !bypassRelation) showRelationApproval(word);
+      else finalizeWord(true);
+    }
+
+    function showGuide() {
+      showModal(
+        "Kelimehmet Oyun Kılavuzu",
+        `<p><strong>Amaç:</strong> Tahtadaki harfleri kullanarak kelime üret, kareleri kendi rengine çevir ve oyunun sonunda en yüksek puana ulaş.</p>
+         <div class="guide-grid">
+          <div class="guide-step"><strong>1. Harf seç</strong><p>Tahtadan yan yana ya da alt alta komşu kareleri seç. Çapraz bağlantı geçerli değildir.</p></div>
+          <div class="guide-step"><strong>2. Kelime yaz</strong><p>Yazdığın kelime, seçtiğin harfleri içermelidir. Kelimede fazladan harf olabilir; harf sırası normalde önemli değildir.</p></div>
+          <div class="guide-step"><strong>3. İlk hamle</strong><p>Oyuna başlamak için tahtadan en az 5 komşu harf seçilmelidir.</p></div>
+          <div class="guide-step"><strong>4. Bağlantı onayı</strong><p>İlk hamleden sonra yeni kelime, önceki kelimeyle anlamca bağlantılı olmalıdır. Rakip onaylar ya da reddeder.</p></div>
+          <div class="guide-step"><strong>5. Kart sorusu</strong><p>Her başarılı kelimeden sonra bir kart gelir. Sorular puan kazandırabilir veya kaybettirebilir; joker ve cezalar sonraki kelimeyi etkiler.</p></div>
+          <div class="guide-step"><strong>6. Puanlama</strong><p>Renkli karelerin, kart puanların ve oyun sonu dizilim bonusların toplanır.</p></div>
+         </div>
+         <div class="guide-tip"><strong>Mobil kullanım:</strong> Telefonda zorlanırsan üstteki “Mobil görünüm” düğmesini aç. Tahta küçülür, butonlar büyür ve pencereler ekrana daha rahat sığar.<br><br><strong>Oyun sonu bonusu:</strong> Kesişmeyen her 5'li çapraz, 6'lı yatay ve 6'lı dikey renk dizilimi +3 puandır.</div>`,
+        [
+          { text: "Oyuna başla", cls: "ok", onClick: closeModal }
+        ]
+      );
+    }
+
+    function showRelationApproval(word) {
+      const opponent = state.players[1 - state.current];
+      showModal(
+        "Rakip Onayı",
+        `<p><strong>${opponent.name}</strong>, yeni kelime önceki kelimeyle anlamsal olarak bağlantılı mı?</p>
+         <div class="card-display">
+          <div class="card-no">Önceki kelime: ${state.previousWord}</div>
+          <div class="card-text">Yeni kelime: <strong>${word}</strong></div>
+         </div>`,
+        [
+          { text: "Reddet", cls: "danger", onClick: () => { closeModal(); rejectWord(); } },
+          { text: "Onayla", cls: "ok", onClick: () => { closeModal(); finalizeWord(true); } }
+        ]
+      );
+    }
+
+    function rejectWord() {
+      const p = state.players[state.current];
+      const word = state.pending?.word || "";
+      state.log.push(`<b>${p.name}</b> “${word}” kelimesini oynadı ama rakip bağlantıyı reddetti.`);
+      state.pending = null;
+      setStatus("Rakip bağlantıyı reddetti. Aynı oyuncu farklı kelime deneyebilir.", "error");
+      renderLog();
+    }
+
+    function finalizeWord() {
+      const pending = state.pending;
+      const player = state.players[state.current];
+      if (!pending) return;
+
+      pending.selected.forEach(idx => { state.board[idx].owner = state.current; state.board[idx].letter = ""; });
+      player.boardPoints += pending.selected.length;
+      const usedCard = pending.activeUsed;
+      if (usedCard) player.activeCard = null;
+
+      const relationNote = usedCard?.type === "joker_unrelated" ? " Kel alaka jokeriyle bağlantı şartı atlandı." : "";
+      state.log.push(`<b>${player.name}</b> “${pending.word}” kelimesini oynadı ve ${pending.selected.length} kare aldı.${relationNote}`);
+      state.previousWord = pending.word;
+      state.selected = [];
+      el("wordInput").value = "";
+      state.pending = null;
+      renderAll();
+      setStatus(`<strong>${player.name}</strong> “${state.previousWord}” kelimesini oynadı. Şimdi kart çekiliyor...`, "good");
+
+      const card = drawCard();
+      handleCard(card);
+    }
+
+    function handleCard(card) {
+      const player = state.players[state.current];
+      const cardHtml = `<div class="card-display"><div class="card-no">Kart #${card.no}</div><div class="card-text">${card.text}</div></div>`;
+      if (card.type === "question_pm") {
+        showModal(
+          "Kart Sorusu",
+          `<p><strong>${player.name}</strong> bu soruyu cevaplar. Rakip cevaba göre puan verir.</p>${cardHtml}`,
+          [
+            { text: "-1 ver", cls: "danger", onClick: () => { awardCardPoints(-1, card); } },
+            { text: "+1 ver", cls: "ok", onClick: () => { awardCardPoints(1, card); } }
+          ]
+        );
+      } else if (card.type === "question_plus") {
+        showModal(
+          "Kart Sorusu",
+          `<p><strong>${player.name}</strong> bu soruyu cevaplar. Doğru kabul edilirse +1 alır; yanlış/pas ise puan değişmez.</p>${cardHtml}`,
+          [
+            { text: "Pas / yanlış: 0", cls: "secondary", onClick: () => { awardCardPoints(0, card); } },
+            { text: "Doğru: +1", cls: "ok", onClick: () => { awardCardPoints(1, card); } }
+          ]
+        );
+      } else {
+        player.activeCard = card;
+        renderScore();
+        showModal(
+          card.type.startsWith("joker") ? "Joker Geldi" : "Ceza Geldi",
+          `<p>Bu kart <strong>${player.name}</strong> oyuncusunun bir sonraki kelimesinde aktif olacak.</p>${cardHtml}`,
+          [
+            { text: "Tamam", cls: "ok", onClick: () => { closeModal(); endTurn(); } }
+          ]
+        );
+      }
+    }
+
+    function awardCardPoints(points, card) {
+      const player = state.players[state.current];
+      player.cardPoints += points;
+      const sign = points > 0 ? "+" : "";
+      state.log.push(`<b>${player.name}</b> kart #${card.no} için ${sign}${points} puan aldı.`);
+      closeModal();
+      endTurn();
+    }
+
+    function endTurn() {
+      state.current = 1 - state.current;
+      state.turnNo += 1;
+      setStatus(`<strong>${state.players[state.current].name}</strong> sırası. Önceki kelimeyle bağlantılı bir kelime bul.`, "");
+      renderAll();
+    }
+
+    function showModal(title, bodyHtml, actions) {
+      modalTitle.textContent = title;
+      modalBody.innerHTML = bodyHtml;
+      modalActions.innerHTML = "";
+      actions.forEach(action => {
+        const btn = document.createElement("button");
+        btn.textContent = action.text;
+        btn.className = action.cls || "";
+        btn.addEventListener("click", action.onClick);
+        modalActions.appendChild(btn);
+      });
+      modalBackdrop.classList.add("show");
+    }
+
+    function closeModal() {
+      modalBackdrop.classList.remove("show");
+    }
+
+    function finishGame() {
+      const p1 = state.players[0], p2 = state.players[1];
+      const b1 = calculateFormationBonus(0);
+      const b2 = calculateFormationBonus(1);
+      const s1 = p1.boardPoints + p1.cardPoints + b1.points;
+      const s2 = p2.boardPoints + p2.cardPoints + b2.points;
+      let result = "Berabere!";
+      if (s1 > s2) result = "Oyuncu 1 kazandı!";
+      if (s2 > s1) result = "Oyuncu 2 kazandı!";
+      showModal(
+        "Oyun Bitti",
+        `<p><strong>${result}</strong></p>
+         <p>Bonus hesabında aynı renk kareleri içeren 5'li çapraz, 6'lı yatay ve 6'lı dikey dizilimler sayılır. Sayılan dizilimler birbirleriyle kare paylaşmaz.</p>
+         <div class="card-display">
+          <div class="card-text"><strong>Oyuncu 1:</strong> ${s1} puan = ${p1.boardPoints} kare + ${p1.cardPoints} kart + ${b1.points} bonus<br>${bonusText(b1)}</div>
+          <div class="card-text"><strong>Oyuncu 2:</strong> ${s2} puan = ${p2.boardPoints} kare + ${p2.cardPoints} kart + ${b2.points} bonus<br>${bonusText(b2)}</div>
+         </div>`,
+        [
+          { text: "Kapat", cls: "secondary", onClick: closeModal },
+          { text: "Yeni oyun", cls: "ok", onClick: () => { closeModal(); newGame(); } }
+        ]
+      );
+    }
+
+
+
+    const MOBILE_PREF_KEY = "kelimehmet_mobile_ui";
+
+    function storageGet(key) {
+      try { return localStorage.getItem(key); }
+      catch (_) { return null; }
+    }
+
+    function storageSet(key, value) {
+      try { localStorage.setItem(key, value); }
+      catch (_) { /* tarayıcı izin vermezse tercih sadece bu oturumda kalır */ }
+    }
+
+    function preferredMobileMode() {
+      const saved = storageGet(MOBILE_PREF_KEY);
+      if (saved === "on") return true;
+      if (saved === "off") return false;
+      return window.matchMedia && window.matchMedia("(max-width: 560px)").matches;
+    }
+
+    function applyMobileMode(on, save = true) {
+      document.body.classList.toggle("mobile-ui", on);
+      const isSmall = window.matchMedia && window.matchMedia("(max-width: 560px)").matches;
+      document.body.classList.toggle("desktop-ui", !on && isSmall);
+      const btn = el("mobileModeBtn");
+      if (btn) {
+        btn.textContent = on ? "Masaüstü görünüm" : "Mobil görünüm";
+        btn.classList.toggle("mobile-toggle-on", on);
+        btn.setAttribute("aria-pressed", on ? "true" : "false");
+      }
+      if (save) storageSet(MOBILE_PREF_KEY, on ? "on" : "off");
+    }
+
+    function initMobileMode() {
+      applyMobileMode(preferredMobileMode(), false);
+      const media = window.matchMedia ? window.matchMedia("(max-width: 560px)") : null;
+      if (media) {
+        const onChange = () => {
+          const saved = storageGet(MOBILE_PREF_KEY);
+          if (saved !== "on" && saved !== "off") applyMobileMode(preferredMobileMode(), false);
+        };
+        if (media.addEventListener) media.addEventListener("change", onChange);
+        else if (media.addListener) media.addListener(onChange);
+      }
+    }
+
+    el("mobileModeBtn").addEventListener("click", () => {
+      applyMobileMode(!document.body.classList.contains("mobile-ui"));
+    });
+    el("clearBtn").addEventListener("click", () => { state.selected = []; renderBoard(); setStatus("Seçim temizlendi."); });
+    el("submitBtn").addEventListener("click", submitWord);
+    el("wordInput").addEventListener("keydown", (e) => { if (e.key === "Enter") submitWord(); });
+    el("newGameBtn").addEventListener("click", () => { newGame(); showGuide(); });
+    el("guideBtn").addEventListener("click", showGuide);
+    el("endGameBtn").addEventListener("click", finishGame);
+
+    initMobileMode();
+    newGame();
+    showGuide();
+  </script>
+</body>
+</html>
